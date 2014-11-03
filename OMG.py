@@ -43,6 +43,7 @@ class OMG():
 	self.max_iter = max_iter
 	self.verbose = verbose
 	self.SubjectCount = 0 # keep track of subjects that have already been used
+	self.C = None
 	
 	if type(self.Files[0])==str:
 	    self.FileType = 'str'
@@ -54,7 +55,14 @@ class OMG():
 	    self.BurnInData = [scale(self.Files[i]) for i in range(self.NburnIn)]
 	    if self.verbose: print "Subject time series provided apriori"
 	    
-	
+    
+    def __repr__(self):
+	""""""
+	mes = '### Online Mixture of (penalised) Gaussians ###\n'
+	mes += '# K: '+ str(self.K) +'\n'
+	mes += '# reg: '+ str(self.rho) +'\n'
+	return mes
+    
     def fitBurnIn(self):
 	"""
 	Run offline penalised MoG algorithm and obtain initial estaimtes
@@ -141,7 +149,8 @@ class OMG():
 		    self.S[k,:,:] = numpy.copy(Snew[k,:,:])
 		self.w = numpy.copy(wUpdate)
 		self.Z = numpy.vstack((self.Z, wNew))
-		#self.C = 
+		self.SubjectCount += 1 # keep track of which subject we are on
+		self.C = numpy.hstack((self.C, wNew.argmax()))
 	    else:
 		iter_ += 1
 		ThetaOld = numpy.copy(self.Theta)
