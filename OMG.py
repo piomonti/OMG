@@ -74,19 +74,30 @@ class OMG():
 	if self.verbose: print "Running initial burn in. Will run " +str(self.BurnInIters) + " burn in iterations"
 	
 	# run first iteration to set benchmark:
-	[self.Theta, self.C, self.Z, self.w, self.BIC, iter_] = PenOfflineEM(D=self.BurnInData, K=self.K, rho=self.rho, tol=self.tol, max_iter=self.max_iter, verbose=False) # run offline EM on burn in subjects
+	failFlag = False
+	try:
+	    [self.Theta, self.C, self.Z, self.w, self.BIC, iter_] = PenOfflineEM(D=self.BurnInData, K=self.K, rho=self.rho, tol=self.tol, max_iter=self.max_iter, verbose=False) # run offline EM on burn in subjects
+	except ValueError:
+	    failFlag = True
+	    if self.verbose: print "Only one cluster found... consider increasing burnin size"
+	    self.BIC = numpy.Inf # this will be replaced by any fitted model!
 	
 	for i in range(1,self.BurnInIters):
 	    if self.verbose: print "Running burn in iteration: " + str(i)
-	    [Theta, C, Z, w, BIC, iter_] = PenOfflineEM(D=self.BurnInData, K=self.K, rho=self.rho, tol=self.tol, max_iter=self.max_iter, verbose=False) # run offline EM on burn in subjects
-	    if BIC < self.BIC:
-		# lower BIC value - save these results:
-		self.Theta = numpy.copy(Theta)
-		self.C = numpy.copy(C)
-		self.Z = numpy.copy(Z)
-		self.w = numpy.copy(w)
-		self.BIC = numpy.copy(BIC)
-		
+	    failFlag = False
+	    try:
+		[Theta, C, Z, w, BIC, iter_] = PenOfflineEM(D=self.BurnInData, K=self.K, rho=self.rho, tol=self.tol, max_iter=self.max_iter, verbose=False) # run offline EM on burn in subjects
+	    except ValueError:
+		failFlag = True
+		if self.verbose: print "Only one cluster found... consider increasing burnin size"
+	    if (failFlag==False):
+		if BIC < self.BIC:
+		    # lower BIC value - save these results:
+		    self.Theta = numpy.copy(Theta)
+		    self.C = numpy.copy(C)
+		    self.Z = numpy.copy(Z)
+		    self.w = numpy.copy(w)
+		    self.BIC = numpy.copy(BIC)
 	# define additional parameters (mainly store sample covariance for each cluster as this will be needed for updating precisions!):
 	self.S = numpy.zeros((self.Theta.shape[0], self.Theta.shape[1], self.Theta.shape[1])) # store sample covariance matrix for each cluster!
 	for i in range(len(self.BurnInData)):
